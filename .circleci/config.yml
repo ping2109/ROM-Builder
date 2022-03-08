@@ -1,0 +1,51 @@
+
+version: 2.1
+executors:
+  worker:
+    docker:
+      - image: registry.gitlab.com/sushrut1101/docker:latest
+jobs:
+  build:
+    executor: worker
+    steps:
+      - run:
+          name: ROM
+          command: |
+            apt update
+            apt install sudo
+            df -h
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends tzdata
+            ln -sf /usr/share/zoneinfo/Asia/HoChiMinh /etc/localtime
+            apt-get install -y tzdata
+            dpkg-reconfigure --frontend noninteractive tzdata
+            sudo apt update -y && sudo apt install git aria2 curl wget rsync zip unzip lzma cpio ccache neofetch -y
+            sudo apt install python2 -y
+            sudo ln -sf /usr/bin/python2 /usr/bin/python
+            git config --global user.name "Sushrut1101"
+            git config --global user.email "guptasushrut@gmail.com"
+            git clone https://github.com/akhilnarang/scripts.git ~/scripts
+            cd ~/scripts
+            sudo bash setup/android_build_env.sh
+            cd ~
+            neofetch
+            mkdir -p ~/work
+            cd ~/work
+            repo init --depth=1 -u https://github.com/LineageOS/android.git -b lineage-17.1
+            repo sync -j16 --force-sync --no-tags --no-clone-bundle
+            git clone https://github.com/samsungexynos7870/android_device_samsung_universal7870-common.git -b lineage-17.1 device/samsung/universal7870-common
+            git clone https://github.com/samsungexynos7870/android_device_samsung_j7xelte.git -b crdroid device/samsung/j7xelte
+            git clone https://github.com/ping2109/NevaKernel-7870.git kernel/samsung/exynos7870
+            git clone https://github.com/samsungexynos7870/android_vendor_samsung_universal7870-common.git vendor/samsung/universal7870-common
+            git clone https://github.com/samsungexynos7870/android_vendor_samsung_j7xelte.git vendor/samsung/j7xelte
+            git clone https://github.com/samsungexynos7870/android_hardware_samsung.git -b lineage-17.1 hardware/samsung
+            cd ~/work
+            . build/envsetup.sh
+            . device/samsung/j7xelte/vendorsetup.sh
+            lunch lineage_j7xelte-eng
+            make bacon
+            cd ~/work
+            cd out/target/product/j7xelte
+            ls -lh
+            pwd
+            chmod 777 *
+            curl --upload-file $(echo lineage*.zip) https://transfer.sh | tee link.txt && echo " "
